@@ -1,0 +1,22 @@
+[
+  "hour_of_day",
+  "day_of_week",
+  "days_since_order",
+  "time_window_duration_mins",
+  "time_window_start_hour",
+  "time_window_end_hour",
+  "courier_daily_parcel_count",
+  "courier_historical_failure_rate",
+  "courier_experience_days",
+  "address_length_chars",
+  "address_token_count",
+  "recipient_historical_failure_rate",
+  "recipient_attempts_count",
+  "is_weekend",
+  "is_narrow_window",
+  "has_unit_number",
+  "city_encoded",
+  "district_encoded",
+  "package_weight_bucket",
+  "declared_value_bucket"
+]

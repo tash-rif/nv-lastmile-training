@@ -94,37 +94,73 @@ _VALUE_LABELS = ["low", "medium", "high"]
 # Target derivation
 # ---------------------------------------------------------------------------
 
-def derive_target(df: pd.DataFrame) -> pd.Series:
+# def derive_target(df: pd.DataFrame) -> pd.Series:
+#     """
+#     Derive binary ``delivery_failed`` label from LaDe's ``delivery_status`` column.
+
+#     LaDe status values observed:
+#     - "DELIVERED"  / "delivered"   → success (0)
+#     - "FAILED"     / "failed"       → failure (1)
+#     - "RETURNED"                    → failure (1)
+#     - Other / NaN                   → NaN (dropped later)
+
+#     Returns
+#     -------
+#     pd.Series of int (0/1) with same index as df.
+#     """
+#     if "delivery_status" in df.columns:
+#         status = df["delivery_status"].astype(str).str.upper().str.strip()
+#         failed = status.isin(["FAILED", "RETURNED", "EXCEPTION", "REFUSED"])
+#         success = status.isin(["DELIVERED", "SUCCESS", "COMPLETED"])
+#         result = pd.Series(np.nan, index=df.index)
+#         result[failed] = 1
+#         result[success] = 0
+#         return result.astype("Int64")
+
+#     # Fallback: if finish_time is NaN → failed
+#     if "finish_time" in df.columns:
+#         return df["finish_time"].isna().astype(int)
+
+#     raise KeyError(
+#         "Cannot derive target: neither 'delivery_status' nor 'finish_time' column found."
+#     )
+
+# Define the new haversine_distance_km function content
+def haversine_distance_km(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in kilometers
+    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = np.sin(dlat / 2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2.0)**2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+    return R * c
+
+# Define the new derive_target function content
+def derive_target(df):
     """
-    Derive binary ``delivery_failed`` label from LaDe's ``delivery_status`` column.
-
-    LaDe status values observed:
-    - "DELIVERED"  / "delivered"   → success (0)
-    - "FAILED"     / "failed"       → failure (1)
-    - "RETURNED"                    → failure (1)
-    - Other / NaN                   → NaN (dropped later)
-
-    Returns
-    -------
-    pd.Series of int (0/1) with same index as df.
+    Derives the 'delivery_failed' target variable based on GPS discrepancy.
+    Failure is defined as a significant discrepancy (> 0.5 km) between planned
+    and actual delivery GPS coordinates.
     """
-    if "delivery_status" in df.columns:
-        status = df["delivery_status"].astype(str).str.upper().str.strip()
-        failed = status.isin(["FAILED", "RETURNED", "EXCEPTION", "REFUSED"])
-        success = status.isin(["DELIVERED", "SUCCESS", "COMPLETED"])
-        result = pd.Series(np.nan, index=df.index)
-        result[failed] = 1
-        result[success] = 0
-        return result.astype("Int64")
+    required_gps_cols = ['lng', 'lat', 'delivery_gps_lng', 'delivery_gps_lat']
+    if all(col in df.columns for col in required_gps_cols):
+        # Calculate Haversine distance between planned (lng, lat) and actual delivery (delivery_gps_lat, delivery_gps_lng)
+        df['distance_planned_actual_km'] = haversine_distance_km(
+            df['lat'], df['lng'], df['delivery_gps_lat'], df['delivery_gps_lng']
+        )
+        # Define threshold for significant discrepancy (e.g., 0.5 km = 500 meters)
+        GPS_DISCREPANCY_THRESHOLD_KM = 0.5
 
-    # Fallback: if finish_time is NaN → failed
-    if "finish_time" in df.columns:
-        return df["finish_time"].isna().astype(int)
+        gps_failed = (df['distance_planned_actual_km'] > GPS_DISCREPANCY_THRESHOLD_KM).astype(float)
+        # Handle NaNs from GPS coordinates or distance calculation
+        gps_failed[df['distance_planned_actual_km'].isna()] = np.nan
 
-    raise KeyError(
-        "Cannot derive target: neither 'delivery_status' nor 'finish_time' column found."
-    )
-
+        return gps_failed.astype(float)
+    else:
+        # Fallback to NaN if GPS columns are missing
+        return pd.Series(np.nan, index=df.index)
 
 # ---------------------------------------------------------------------------
 # Temporal features
