@@ -10,7 +10,10 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Tuple
 
+import shutil
+import subprocess
 import numpy as np
+import os
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -55,6 +58,36 @@ def train_lgbm(
     params.setdefault("metric", "auc")
     params.setdefault("verbosity", -1)
     params.setdefault("n_jobs", -1)
+
+    # If running on Google Colab with a T4 GPU, force LightGBM to use that GPU.
+    # Detection: presence of google.colab and nvidia-smi reporting a T4 device.
+    def _colab_has_t4() -> bool:
+        try:
+            import google.colab  # type: ignore
+            in_colab = True
+        except Exception:
+            in_colab = False
+        if not in_colab:
+            return False
+        try:
+            if shutil.which("nvidia-smi") is None:
+                return False
+            out = subprocess.check_output([
+                "nvidia-smi", "--query-gpu=name", "--format=csv,noheader"
+            ], stderr=subprocess.DEVNULL)
+            names = out.decode().strip().splitlines()
+            for n in names:
+                if "T4" in n or "Tesla T4" in n:
+                    return True
+        except Exception:
+            return False
+        return False
+
+    if _colab_has_t4():
+        params["device"] = "gpu"
+        params["device_type"] = "gpu"
+        params.setdefault("gpu_platform_id", 0)
+        params.setdefault("gpu_device_id", 0)
 
     # Compute class weight
     n_neg = int((y_train == 0).sum())
@@ -125,6 +158,26 @@ def run_optuna_lgbm(
         params["scale_pos_weight"] = trial.suggest_float(
             "scale_pos_weight", 1.0, max(n_neg / max(n_pos, 1), 2.0)
         )
+
+        # Force GPU only when on Colab with T4
+        try:
+            import google.colab  # type: ignore
+            in_colab = True
+        except Exception:
+            in_colab = False
+        if in_colab:
+            try:
+                if shutil.which("nvidia-smi") is not None:
+                    out = subprocess.check_output([
+                        "nvidia-smi", "--query-gpu=name", "--format=csv,noheader"
+                    ], stderr=subprocess.DEVNULL)
+                    if any("T4" in s or "Tesla T4" in s for s in out.decode().splitlines()):
+                        params["device"] = "gpu"
+                        params["device_type"] = "gpu"
+                        params.setdefault("gpu_platform_id", 0)
+                        params.setdefault("gpu_device_id", 0)
+            except Exception:
+                pass
 
         model = lgb.LGBMClassifier(**params)
         scores = cross_validate(
