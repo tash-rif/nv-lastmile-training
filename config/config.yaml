@@ -1,0 +1,33 @@
+data:
+  raw_dir: /content/data/raw
+  processed_dir: /content/data/processed
+  test_size: 0.2
+  random_state: 42
+
+features:
+  use_smote: false
+  target_col: delivery_failed
+
+models:
+  lgbm:
+    optuna_trials: 50
+    fixed_params:
+      objective: binary
+      metric: auc
+      verbosity: -1
+  rf:
+    param_grid:
+      n_estimators: [100, 300]
+      max_depth: [8, 15, null]
+      class_weight: ["balanced"]
+  lr:
+    param_grid:
+      C: [0.01, 0.1, 1.0, 10.0]
+      class_weight: ["balanced"]
+
+outputs:
+  dir: /content/outputs
+  preprocessor: preprocessor.joblib
+  champion_model: champion_model.joblib
+  feature_names: feature_names.json
+  evaluation_report: evaluation_report.json

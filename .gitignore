@@ -1,0 +1,25 @@
+# Data and model artifacts — download/generate at runtime
+outputs/
+/content/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# Credentials — NEVER commit these
+.env
+kaggle.json
+*.token
+
+# OS
+.DS_Store
+Thumbs.db
