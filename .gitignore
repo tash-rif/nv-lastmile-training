@@ -1,5 +1,5 @@
 # Data and model artifacts — download/generate at runtime
-outputs/
+# outputs/ - commented to commit joblibs
 /content/
 
 # Python
