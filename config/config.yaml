@@ -1,23 +1,26 @@
 data:
-  raw_dir: /content/data/raw
-  processed_dir: /content/data/processed
+  raw_dir: data/raw
+  processed_dir: data/processed
   test_size: 0.2
   random_state: 42
 
 features:
-  use_smote: true
+  use_smote: false
   target_col: delivery_failed
 
 models:
+  search_sample_size: 300000   # rows used for hyperparam search (subsample of full train)
+  cv_folds: 3                  # CV folds during search (3 vs 5 saves ~40% time)
   lgbm:
-    optuna_trials: 50
+    optuna_trials: 30
+    n_jobs: 4                    # threads per LightGBM model (search + final fit)
     fixed_params:
       objective: binary
       metric: auc
-      verbosity: -1
+      verbosity: 1
   rf:
     param_grid:
-      n_estimators: [100, 300]
+      n_estimators: [100, 200]
       max_depth: [8, 15, null]
       class_weight: ["balanced"]
   lr:
@@ -26,8 +29,9 @@ models:
       class_weight: ["balanced"]
 
 outputs:
-  dir: /content/outputs
+  dir: outputs
   preprocessor: preprocessor.joblib
   champion_model: champion_model.joblib
   feature_names: feature_names.json
   evaluation_report: evaluation_report.json
+  checkpoint_dir: outputs/checkpoints

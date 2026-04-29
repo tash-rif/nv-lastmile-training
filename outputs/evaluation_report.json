@@ -1,0 +1,51 @@
+{
+  "champion_model": "rf",
+  "models": {
+    "lgbm": {
+      "auc_roc": 0.699311,
+      "precision": 0.191905,
+      "recall": 0.382192,
+      "f1": 0.255513,
+      "brier": 0.164254
+    },
+    "rf": {
+      "auc_roc": 0.762941,
+      "precision": 0.186991,
+      "recall": 0.676688,
+      "f1": 0.293012,
+      "brier": 0.196995
+    },
+    "lr": {
+      "auc_roc": 0.553967,
+      "precision": 0.099528,
+      "recall": 0.546941,
+      "f1": 0.168411,
+      "brier": 0.24742
+    }
+  },
+  "test_set_size": 902933,
+  "failure_rate_test": 0.089703,
+  "feature_names": [
+    "hour_of_day",
+    "day_of_week",
+    "days_since_order",
+    "time_window_duration_mins",
+    "time_window_start_hour",
+    "time_window_end_hour",
+    "courier_daily_parcel_count",
+    "courier_historical_failure_rate",
+    "courier_experience_days",
+    "address_length_chars",
+    "address_token_count",
+    "recipient_historical_failure_rate",
+    "recipient_attempts_count",
+    "is_weekend",
+    "is_narrow_window",
+    "has_unit_number",
+    "city_encoded",
+    "district_encoded",
+    "package_weight_bucket",
+    "declared_value_bucket"
+  ],
+  "threshold_used": 0.5
+}
