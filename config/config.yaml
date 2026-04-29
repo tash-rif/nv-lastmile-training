@@ -5,7 +5,7 @@ data:
   random_state: 42
 
 features:
-  use_smote: false
+  use_smote: true
   target_col: delivery_failed
 
 models:
